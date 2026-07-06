@@ -9,7 +9,7 @@ import {
   inventory_items,        // backs the Brand / Category / Product / Department suggest lists
   BRAND, CATEGORY, PRODUCT, DEPARTMENT, PERIOD,
   overview_dashboard, product_explorer_dashboard, customer_insights_dashboard, 
-  brand_suggest
+  brand_suggest, category_suggest, product_suggest, department_suggest
 } from 'ecommerce.malloy'
 
 export {
@@ -17,5 +17,5 @@ export {
   inventory_items,        // backs the Brand / Category / Product / Department suggest lists
   BRAND, CATEGORY, PRODUCT, DEPARTMENT, PERIOD,
   overview_dashboard, product_explorer_dashboard, customer_insights_dashboard, 
-  brand_suggest
+  brand_suggest, category_suggest, product_suggest, department_suggest
 }

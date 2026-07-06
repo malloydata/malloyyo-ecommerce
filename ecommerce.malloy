@@ -307,13 +307,13 @@ source: order_items is order_items_table include {
 // `inventory_items` dimension (server-side typeahead).
 // ==========================================================================
 given:
-  # label="Brand" suggest { query=brand_suggest }
+  # label="Brand" suggest { query=brand_suggest dimension=product_brand }
   BRAND :: filter<string> is f''
-  # label="Category" suggest { source=inventory_items dimension=product_category }
+  # label="Category" suggest { query=category_suggest dimension=product_category }
   CATEGORY :: filter<string> is f''
-  # label="Product" suggest { source=inventory_items dimension=product_name }
+  # label="Product" suggest { query=product_suggest dimension=product_name }
   PRODUCT :: filter<string> is f''
-  # label="Department" control=select suggest { source=inventory_items dimension=product_department }
+  # label="Department" control=select suggest { query=department_suggest dimension=product_department }
   DEPARTMENT :: filter<string> is f''
   // A temporal filter given renders as the TimeRange control: relative
   // presets (f'7 days' = the last 7 days, f'today', …) plus a custom
@@ -321,12 +321,39 @@ given:
   # label="Time period"
   PERIOD :: filter<timestamp> is f''
 
+// Related (faceted) suggestions: each filter's option list is narrowed by
+// the OTHER filters' current values (the runtime passes them in; f'' = no
+// constraint). Each query deliberately omits its own given — self-filtering
+// would collapse the list to the current pick.
 query: brand_suggest is inventory_items -> product_brand + {
     where:
-      // product_brand ~ $BRAND,
       product_category ~ $CATEGORY,
       product_name ~ $PRODUCT,
       product_department ~ $DEPARTMENT
+    limit: 500
+}
+
+query: category_suggest is inventory_items -> product_category + {
+    where:
+      product_brand ~ $BRAND,
+      product_name ~ $PRODUCT,
+      product_department ~ $DEPARTMENT
+    limit: 500
+}
+
+query: product_suggest is inventory_items -> product_name + {
+    where:
+      product_brand ~ $BRAND,
+      product_category ~ $CATEGORY,
+      product_department ~ $DEPARTMENT
+    limit: 500
+}
+
+query: department_suggest is inventory_items -> product_department + {
+    where:
+      product_brand ~ $BRAND,
+      product_category ~ $CATEGORY,
+      product_name ~ $PRODUCT
     limit: 500
 }
 

@@ -1,3 +1,6 @@
+##! experimental.access_modifiers
+##! experimental.givens
+
 // duckdb sources
 source: users_table is duckdb.table('https://storage.googleapis.com/malloyyo/ecommerce/users.parquet') extend {}
 source: product_table is duckdb.table('https://storage.googleapis.com/malloyyo/ecommerce/products.parquet') extend {}
@@ -5,8 +8,36 @@ source: inventory_items_table is duckdb.table('https://storage.googleapis.com/ma
 source: order_items_table is duckdb.table('https://storage.googleapis.com/malloyyo/ecommerce/order_items.parquet') extend {}
 
 
-source: users is users_table extend {
+// --------------------------------------------------------------------------
+// Keep the sample data looking current.
+//
+// The stored data ends on its last order date (fixed in the past). `day_offset`
+// is the number of days between that last date and `now`, recomputed every time
+// the model runs. Cross-joining `date_shift` into each source lets us add that
+// offset to every stored date, so the newest record always lands on today and
+// the whole dataset rolls forward with the calendar automatically.
+//
+// Each source hides its raw stored date with `include { internal: ... }` — an
+// `internal` field can't be used in queries but is still available to the
+// definitions in the `extend` block, where we add the offset and re-expose the
+// date under its original name (now showing current dates).
+// --------------------------------------------------------------------------
+source: date_shift is order_items_table -> {
+  aggregate: last_created is max(created_at)
+} extend {
+  dimension: day_offset is days(last_created to now)
+}
+
+
+source: users is users_table include {
+  *
+  internal: created_at_raw is created_at
+} extend {
   primary_key: id
+  join_cross: date_shift
+
+  dimension: created_at is created_at_raw + date_shift.day_offset days
+
   dimension: full_name is concat(
     upper(substr(first_name, 1, 1)), lower(substr(first_name,2)),
     ' ',
@@ -20,25 +51,43 @@ source: product is product_table extend {
   measure: product_count is count()
 }
 
-source: inventory_items is inventory_items_table extend {
+source: inventory_items is inventory_items_table include {
+  *
+  internal:
+    created_at_raw is created_at
+    sold_at_raw is sold_at
+} extend {
   primary_key: id
+  join_cross: date_shift
 
   join_one: product with product_id
+
+  dimension:
+    created_at is created_at_raw + date_shift.day_offset days
+    sold_at is sold_at_raw + date_shift.day_offset days
 
   measure:
     inventory_item_count is count(id)
     total_cost is cost.sum()
 }
 
-source: user_order_facts is 
+source: user_order_facts is
   order_items_table ->  {
     group_by: user_id
-    aggregate: first_order is min(created_at)
-    aggregate: most_recent_order is max(created_at)
+    aggregate: first_order_raw is min(created_at)
+    aggregate: most_recent_order_raw is max(created_at)
     aggregate: lifetime_orders is count()
     aggregate: lifetime_spend is sale_price.sum() {where: status != 'Cancelled' | 'Returned'}
+  } include {
+    *
+    internal: first_order_raw, most_recent_order_raw
   } extend {
   primary_key: user_id
+  join_cross: date_shift
+
+  dimension:
+    first_order is first_order_raw + date_shift.day_offset days
+    most_recent_order is most_recent_order_raw + date_shift.day_offset days
 
   dimension: top_customer is lifetime_orders > 10
   dimension: lifetime_order_tier is lifetime_orders ?
@@ -56,8 +105,25 @@ source: user_order_facts is
 }
 
 #" Fictional Ecommerce dataset.  Inlcuded produts, brands, users, etc
-source: order_items is order_items_table extend {
+source: order_items is order_items_table include {
+  *
+  // hide the raw stored dates; they stay available (internal) to the
+  // definitions below for the shift and for fixed-year reporting.
+  internal:
+    created_at_raw is created_at
+    returned_at_raw is returned_at
+    shipped_at_raw is shipped_at
+    delivered_at_raw is delivered_at
+} extend {
   primary_key: id
+  join_cross: date_shift
+
+  // re-expose the dates under their original names, shifted to appear current
+  dimension:
+    created_at is created_at_raw + date_shift.day_offset days
+    returned_at is returned_at_raw + date_shift.day_offset days
+    shipped_at is shipped_at_raw + date_shift.day_offset days
+    delivered_at is delivered_at_raw + date_shift.day_offset days
 
   join_one:
     users with user_id
@@ -81,8 +147,9 @@ source: order_items is order_items_table extend {
 
     product_count is count(inventory_items.product_id)
     user_count is users.count()
-    total_sales_2022 is total_sales { where: year(created_at) = 2022 }
-    total_sales_2021 is total_sales { where: year(created_at) = 2021 }
+    // fixed historical comparisons stay pinned to the original calendar years
+    total_sales_2022 is total_sales { where: year(created_at_raw) = 2022 }
+    total_sales_2021 is total_sales { where: year(created_at_raw) = 2021 }
 
   view: top_categories is {
     top: 5
@@ -129,9 +196,10 @@ source: order_items is order_items_table extend {
     aggregate: total_sales
   }
 
+  // fixed historical report — pinned to calendar year 2022 via the raw date
   view: sales_by_month_2022 is {
-    where: created_at = @2022
-    group_by: order_month is created_at.month
+    where: created_at_raw = @2022
+    group_by: order_month is created_at_raw.month
     aggregate: total_sales
   }
 
@@ -142,7 +210,7 @@ source: order_items is order_items_table extend {
 
   view: frequent_returners is {
     group_by: users.full_name, user_id
-    aggregate: 
+    aggregate:
       count_returns is order_item_count { where: status = 'Returned'}
       percent_purchases_returned is round(100.0 * order_item_count { where: status = 'Returned'} / order_item_count, 0)
       value_returned is total_sales { where: status = 'Returned'}
@@ -182,7 +250,7 @@ source: order_items is order_items_table extend {
       total_sales
       order_count
       total_gross_margin
-    nest: 
+    nest:
       # line_chart
       by_month
       # shape_map
@@ -190,7 +258,7 @@ source: order_items is order_items_table extend {
       top_brands
       top_customers + {aggregate: order_count}
   }
-  
+
 
   view: sales_summary_yoy is {
     aggregate:
@@ -201,7 +269,144 @@ source: order_items is order_items_table extend {
   }
 
   view: search_index is {
-    index: *, users.*, inventory_items.* 
+    index: *, users.*, inventory_items.*
     sample: true
   }
+
+  // ------------------------------------------------------------------------
+  // Reusable breakdowns for the dashboards below
+  // ------------------------------------------------------------------------
+  view: by_department is {
+    group_by: inventory_items.product_department
+    aggregate: total_sales, total_gross_margin, percent_of_sales, order_item_count
+  }
+
+  view: sales_by_traffic_source is {
+    group_by: users.traffic_source
+    aggregate: user_count, total_sales
+  }
+
+  view: users_by_spend_category is {
+    group_by: user_order_facts.spend_category
+    aggregate: user_count, total_sales
+  }
+
+  view: users_by_lifetime_tier is {
+    group_by: user_order_facts.lifetime_order_tier
+    aggregate: user_count, total_sales
+  }
+}
+
+// ==========================================================================
+// Dashboards
+//
+// Every dashboard shares one filter contract: the model-level `given`s below.
+// Each is a `filter<string>` defaulting to f'' (empty = no filter = "All"),
+// so the same Brand / Category / Product / Department controls drive every
+// dashboard. Option lists come from the distinct values of the matching
+// `inventory_items` dimension (server-side typeahead).
+// ==========================================================================
+given:
+  # label="Brand" suggest { query=brand_suggest }
+  BRAND :: filter<string> is f''
+  # label="Category" suggest { source=inventory_items dimension=product_category }
+  CATEGORY :: filter<string> is f''
+  # label="Product" suggest { source=inventory_items dimension=product_name }
+  PRODUCT :: filter<string> is f''
+  # label="Department" control=select suggest { source=inventory_items dimension=product_department }
+  DEPARTMENT :: filter<string> is f''
+  // A temporal filter given renders as the TimeRange control: relative
+  // presets (f'7 days' = the last 7 days, f'today', …) plus a custom
+  // literal range (f'2026-01-01 to 2026-07-01'). f'' = all time.
+  # label="Time period"
+  PERIOD :: filter<timestamp> is f''
+
+query: brand_suggest is inventory_items -> product_brand + {
+    where:
+      // product_brand ~ $BRAND,
+      product_category ~ $CATEGORY,
+      product_name ~ $PRODUCT,
+      product_department ~ $DEPARTMENT
+    limit: 500
+}
+
+#" Business health at a glance — sales, margin, and orders with a monthly trend, top categories / brands / products, geography, and best customers. Filter by brand, category, product, or department.
+# artifact { title="Business Overview" } dashboard
+query: overview_dashboard is order_items -> {
+  where:
+    inventory_items.product_brand ~ $BRAND,
+    inventory_items.product_category ~ $CATEGORY,
+    inventory_items.product_name ~ $PRODUCT,
+    inventory_items.product_department ~ $DEPARTMENT,
+    created_at ~ $PERIOD
+  aggregate:
+    total_sales
+    total_gross_margin
+    order_count
+    order_item_count
+    user_count
+  nest:
+    # line_chart
+    sales_trend is by_month
+    # bar_chart
+    top_categories
+    top_brands
+    top_products
+    # shape_map
+    sales_by_state
+    top_customers
+    # bar_chart
+    orders_by_status
+}
+
+#" Product hierarchy performance — department → category → brand → product, with sales, gross margin, and units. Filter by brand, category, product, or department.
+# artifact { title="Product & Brand Explorer" } dashboard
+query: product_explorer_dashboard is order_items -> {
+  where:
+    inventory_items.product_brand ~ $BRAND,
+    inventory_items.product_category ~ $CATEGORY,
+    inventory_items.product_name ~ $PRODUCT,
+    inventory_items.product_department ~ $DEPARTMENT,
+    created_at ~ $PERIOD
+  aggregate:
+    total_sales
+    total_gross_margin
+    average_gross_margin
+    order_item_count
+    product_count
+  nest:
+    # bar_chart
+    by_department
+    top_categories
+    top_brands
+    top_products
+    # line_chart
+    sales_trend is by_month
+}
+
+#" Who's buying — spend tiers, loyalty, acquisition source, best customers, and returns. Filter by brand, category, product, or department.
+# artifact { title="Customer Insights" } dashboard
+query: customer_insights_dashboard is order_items -> {
+  where:
+    inventory_items.product_brand ~ $BRAND,
+    inventory_items.product_category ~ $CATEGORY,
+    inventory_items.product_name ~ $PRODUCT,
+    inventory_items.product_department ~ $DEPARTMENT,
+    created_at ~ $PERIOD
+  aggregate:
+    total_sales
+    user_count
+    order_count
+    # currency
+    average_order_value is total_sales / order_count
+  nest:
+    # bar_chart
+    users_by_spend_category
+    users_by_lifetime_tier
+    # bar_chart
+    sales_by_traffic_source
+    top_customers
+    frequent_returners
+    # shape_map
+    sales_by_state
 }

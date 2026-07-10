@@ -209,6 +209,9 @@ source: order_items is order_items_table include {
   }
 
   view: frequent_returners is {
+    top: 20   // interim guard: unbounded group_by-user renders every row as
+              // static DOM (dashboard runtime has virtualization off) and
+              // crashes the tab. Drop once the renderer windows rows.
     group_by: users.full_name, user_id
     aggregate:
       count_returns is order_item_count { where: status = 'Returned'}
@@ -364,7 +367,7 @@ query: department_suggest is inventory_items -> product_department + {
 }
 
 #" Business health at a glance — sales, margin, and orders with a monthly trend, top categories / brands / products, geography, and best customers. Filter by brand, category, product, or department.
-# artifact { title="Business Overview" } dashboard
+# artifact { title="Business Overview" } dashboard {columns=6}
 query: overview_dashboard is order_items -> {
   where:
     inventory_items.product_brand ~ $BRAND,
@@ -372,12 +375,15 @@ query: overview_dashboard is order_items -> {
     inventory_items.product_name ~ $PRODUCT,
     inventory_items.product_department ~ $DEPARTMENT,
     created_at ~ $PERIOD
+  # colspan=2
   aggregate:
     total_sales
     total_gross_margin
     order_count
     order_item_count
     user_count
+  
+  # colspan=3
   nest:
     # line_chart
     sales_trend is by_month
@@ -393,7 +399,7 @@ query: overview_dashboard is order_items -> {
 }
 
 #" Product hierarchy performance — department → category → brand → product, with sales, gross margin, and units. Filter by brand, category, product, or department.
-# artifact { title="Product & Brand Explorer" } dashboard
+# artifact { title="Product & Brand Explorer" } dashboard {columns=6}
 query: product_explorer_dashboard is order_items -> {
   where:
     inventory_items.product_brand ~ $BRAND,
@@ -401,12 +407,14 @@ query: product_explorer_dashboard is order_items -> {
     inventory_items.product_name ~ $PRODUCT,
     inventory_items.product_department ~ $DEPARTMENT,
     created_at ~ $PERIOD
+  # colspan=2
   aggregate:
     total_sales
     total_gross_margin
     average_gross_margin
     order_item_count
     product_count
+  # colspan=3
   nest:
     # bar_chart
     by_department
@@ -418,7 +426,7 @@ query: product_explorer_dashboard is order_items -> {
 }
 
 #" Who's buying — spend tiers, loyalty, acquisition source, best customers, and returns. Filter by brand, category, product, or department.
-# artifact { title="Customer Insights" } dashboard
+# artifact { title="Customer Insights" } dashboard {columns=6}
 query: customer_insights_dashboard is order_items -> {
   where:
     inventory_items.product_brand ~ $BRAND,
@@ -426,13 +434,16 @@ query: customer_insights_dashboard is order_items -> {
     inventory_items.product_name ~ $PRODUCT,
     inventory_items.product_department ~ $DEPARTMENT,
     created_at ~ $PERIOD
+  # colspan=2
   aggregate:
     total_sales
     user_count
     order_count
     # currency
     average_order_value is total_sales / order_count
+  # colspan=3
   nest:
+    # break
     # bar_chart
     users_by_spend_category
     users_by_lifetime_tier

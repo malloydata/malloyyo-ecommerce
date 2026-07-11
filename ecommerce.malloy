@@ -315,7 +315,7 @@ given:
   # label="Time period"
   PERIOD :: filter<timestamp> is f''
 
-  # label="Category" suggest { query=category_suggest dimension=product_category }
+  # label="Category" control=multiselect suggest { query=category_suggest dimension=product_category }
   CATEGORY :: filter<string> is f''
 
   # label="Brand" suggest { query=brand_suggest dimension=product_brand }

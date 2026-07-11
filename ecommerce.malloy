@@ -383,6 +383,7 @@ query: overview_dashboard is order_items -> {
   
   # colspan=3
   nest:
+    # break
     # line_chart
     sales_trend is by_month
     # bar_chart
@@ -414,6 +415,7 @@ query: product_explorer_dashboard is order_items -> {
     product_count
   # colspan=3
   nest:
+    # break
     # bar_chart
     by_department
     top_categories
@@ -451,4 +453,26 @@ query: customer_insights_dashboard is order_items -> {
     frequent_returners
     # shape_map
     sales_by_state
+}
+
+#" Category seasonality — each category's calendar-month sales as a share of its OWN annual total, so a small category's rhythm reads as clearly as a giant's. Warm months over-index, cool months under-index. Filter by brand, department, or time period.
+# artifact { title="Category Seasonality" name="seasonality" }
+query: seasonality_matrix is order_items -> {
+  where:
+    inventory_items.product_brand ~ $BRAND,
+    inventory_items.product_department ~ $DEPARTMENT,
+    created_at ~ $PERIOD
+  group_by:
+    category is inventory_items.product_category
+    month_num is month(created_at)
+    month_name is month(created_at) ?
+      pick 'Jan' when 1 pick 'Feb' when 2 pick 'Mar' when 3
+      pick 'Apr' when 4 pick 'May' when 5 pick 'Jun' when 6
+      pick 'Jul' when 7 pick 'Aug' when 8 pick 'Sep' when 9
+      pick 'Oct' when 10 pick 'Nov' when 11 else 'Dec'
+  aggregate:
+    month_sales is total_sales
+    category_total is all(total_sales, category)
+    seasonal_share is total_sales / all(total_sales, category)
+  order_by: category, month_num
 }

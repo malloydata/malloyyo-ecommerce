@@ -151,19 +151,25 @@ source: order_items is order_items_table include {
 
   view: top_categories is {
     top: 5
-    group_by: inventory_items.product_category
+    // Drill: click a category → open the Product & Brand Explorer filtered to it,
+    // or filter the current dashboard (self). Aliasing to `category` makes the
+    // clicked value seed the CATEGORY given (given = dimension name, upper-cased).
+    # drill { to=[product_explorer_dashboard, self] }
+    group_by: category is inventory_items.product_category
     aggregate: total_sales
   }
 
   view: top_brands is {
     top: 5
-    group_by: inventory_items.product_brand
+    # drill { to=[product_explorer_dashboard, self] }
+    group_by: brand is inventory_items.product_brand
     aggregate: total_sales, percent_of_sales,total_gross_margin, order_item_count
   }
 
   view: top_products is {
     top: 5
-    group_by: inventory_items.product_name
+    # drill { to=[self] }
+    group_by: product is inventory_items.product_name
     aggregate: total_sales, percent_of_sales, total_gross_margin, order_item_count
   }
 
@@ -279,7 +285,8 @@ source: order_items is order_items_table include {
   // Reusable breakdowns for the dashboards below
   // ------------------------------------------------------------------------
   view: by_department is {
-    group_by: inventory_items.product_department
+    # drill { to=[product_explorer_dashboard, self] }
+    group_by: department is inventory_items.product_department
     aggregate: total_sales, total_gross_margin, percent_of_sales, order_item_count
   }
 

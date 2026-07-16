@@ -6,3 +6,5 @@ source: users_table is md.table('mayolo.users') extend {}
 source: product_table is md.table('mayolo.products') extend {}
 source: inventory_items_table is md.table('mayolo.inventory_items') extend {}
 source: order_items_table is md.table('mayolo.order_items') extend {}
+
+source: do is md.sql("""SELECT date_diff('day', DATE '2022-11-15', current_date) AS days_offset """ )

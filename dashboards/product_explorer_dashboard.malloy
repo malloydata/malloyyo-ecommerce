@@ -1,0 +1,33 @@
+##! experimental.access_modifiers
+##! experimental.givens
+
+import "../ecommerce.malloy"
+
+# artifact { title="Product & Brand Explorer" }
+#" Product hierarchy performance — department → category → brand → product, with sales, gross margin, and units. Filter by brand, category, product, or department.
+# dashboard {columns=6}
+query: product_explorer_dashboard is order_items -> {
+  where:
+    inventory_items.product_brand ~ $BRAND,
+    inventory_items.product_category ~ $CATEGORY,
+    inventory_items.product_name ~ $PRODUCT,
+    inventory_items.product_department ~ $DEPARTMENT,
+    created_at ~ $PERIOD
+  # colspan=2
+  aggregate:
+    total_sales
+    total_gross_margin
+    average_gross_margin
+    order_item_count
+    product_count
+  # colspan=3
+  nest:
+    # break
+    # bar_chart
+    by_department
+    top_categories
+    top_brands
+    top_products
+    # line_chart
+    sales_trend is by_month
+}

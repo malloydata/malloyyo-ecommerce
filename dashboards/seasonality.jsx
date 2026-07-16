@@ -75,7 +75,7 @@ export default function Dashboard({ dashboard, givens }) {
         />
       </Controls>
 
-      <VegaChart spec={spec} query="seasonality_matrix" givens={givens} />
+      <VegaChart spec={spec} query="seasonality" givens={givens} />
     </div>
   );
 }

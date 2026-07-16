@@ -1,0 +1,38 @@
+##! experimental.access_modifiers
+##! experimental.givens
+
+import "../ecommerce.malloy"
+
+# artifact { title="Business Overview"}
+#" Business health at a glance — sales, margin, and orders with a monthly trend, top categories / brands / products, geography, and best customers. Filter by brand, category, product, or department.
+# dashboard {columns=6}
+query: overview_dashboard is order_items -> {
+  where:
+    inventory_items.product_brand ~ $BRAND,
+    inventory_items.product_category ~ $CATEGORY,
+    inventory_items.product_name ~ $PRODUCT,
+    inventory_items.product_department ~ $DEPARTMENT,
+    created_at ~ $PERIOD
+  # colspan=2
+  aggregate:
+    total_sales
+    total_gross_margin
+    order_count
+    order_item_count
+    user_count
+  
+  # colspan=3
+  nest:
+    # break
+    # line_chart
+    sales_trend is by_month
+    # bar_chart
+    top_categories
+    top_brands
+    top_products
+    # shape_map
+    sales_by_state
+    top_customers
+    # bar_chart
+    orders_by_status
+}

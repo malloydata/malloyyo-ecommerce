@@ -7,17 +7,11 @@
 import {
   order_items,
   inventory_items,        // backs the Brand / Category / Product / Department suggest lists
-  BRAND, CATEGORY, PRODUCT, DEPARTMENT, PERIOD,
-  overview_dashboard, product_explorer_dashboard, customer_insights_dashboard,
-  seasonality_matrix,     // the Vega-Lite seasonality heatmap (custom Dashboard.tsx)
   brand_suggest, category_suggest, product_suggest, department_suggest
 } from 'ecommerce.malloy'
 
 export {
   order_items,
   inventory_items,        // backs the Brand / Category / Product / Department suggest lists
-  BRAND, CATEGORY, PRODUCT, DEPARTMENT, PERIOD,
-  overview_dashboard, product_explorer_dashboard, customer_insights_dashboard,
-  seasonality_matrix,     // the Vega-Lite seasonality heatmap (custom Dashboard.tsx)
   brand_suggest, category_suggest, product_suggest, department_suggest
 }

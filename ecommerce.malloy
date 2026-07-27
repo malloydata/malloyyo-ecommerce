@@ -165,7 +165,7 @@ source: order_items is order_items_table include {
     top: 5
     # drill { to=[product_explorer_dashboard, self] }
     group_by: brand is inventory_items.product_brand
-    aggregate: total_sales, percent_of_sales,total_gross_margin, order_item_count
+    aggregate: total_sales, percent_of_sales,total_gross_margin, product_count, order_count
   }
 
   view: top_products is {
@@ -178,7 +178,7 @@ source: order_items is order_items_table include {
   view: top_customers is {
     top: 5
     group_by: users.full_name, user_id
-    aggregate: total_sales, order_item_count
+    aggregate: total_sales, order_count, product_count
   }
 
   view: recent_purchases is {
@@ -234,7 +234,11 @@ source: order_items is order_items_table include {
   }
 
   view: order_detail is {
-    group_by: order_id, created_at
+    group_by: 
+      order_id
+      created_at
+      users.email
+      users.full_name
     nest: items is {
       group_by:  inventory_items.product_name, sale_price
     }
@@ -258,7 +262,7 @@ source: order_items is order_items_table include {
   view: by_department is {
     # drill { to=[product_explorer_dashboard, self] }
     group_by: department is inventory_items.product_department
-    aggregate: total_sales, total_gross_margin, percent_of_sales, order_item_count
+    aggregate: total_sales, total_gross_margin, percent_of_sales, product_count, order_item_count
   }
 
   view: sales_by_traffic_source is {
@@ -268,7 +272,7 @@ source: order_items is order_items_table include {
 
   view: users_by_spend_category is {
     group_by: user_order_facts.spend_category
-    aggregate: user_count, total_sales
+    aggregate: user_count, total_sales, product_count
   }
 
   view: users_by_lifetime_tier is {

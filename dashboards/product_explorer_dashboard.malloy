@@ -1,7 +1,7 @@
 ##! experimental.access_modifiers
 ##! experimental.givens
 
-import "../ecommerce.malloy"
+import "../index.malloy"
 
 // --------------------------------------------------------------------------
 // Product & Brand Explorer — data behind the React dashboard

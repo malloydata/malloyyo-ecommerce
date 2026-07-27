@@ -1,7 +1,7 @@
 ##! experimental.access_modifiers
 ##! experimental.givens
 
-import "../ecommerce.malloy"
+import "../index.malloy"
 
 # artifact { title="Category Seasonality" }
 #" Category seasonality — each category's calendar-month sales as a share of its OWN annual total, so a small category's rhythm reads as clearly as a giant's. Warm months over-index, cool months under-index. Filter by brand, department, or time period.

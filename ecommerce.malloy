@@ -132,6 +132,7 @@ source: order_items is order_items_table include {
     gross_margin is sale_price - inventory_items.cost
 
   measure:
+    # drill {view=[order_detail]}
     order_count is count(order_id)
     order_item_count is count()
     # currency
@@ -143,6 +144,7 @@ source: order_items is order_items_table include {
     # currency
     average_gross_margin is total_gross_margin/order_item_count
 
+    # drill {view=[product_detail]}
     product_count is count(inventory_items.product_id)
     user_count is users.count()
     // fixed historical comparisons stay pinned to the original calendar years
@@ -229,6 +231,20 @@ source: order_items is order_items_table include {
       sales_growth is total_sales_2022 - total_sales_2021
       sales_yoy is total_sales_2022 / nullif(total_sales_2021,0) - 1
       growth_contribution is (total_sales_2022 - total_sales_2021) / all(total_sales_2022 - total_sales_2021)
+  }
+
+  view: order_detail is {
+    group_by: order_id, created_at
+    nest: items is {
+      group_by:  inventory_items.product_name, sale_price
+    }
+    limit: 20
+    order_by: created_at desc
+  }
+
+  view: product_detail is {
+    group_by:  inventory_items.product_name
+    aggregate: order_count, total_sales
   }
 
   view: search_index is {

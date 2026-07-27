@@ -1,7 +1,7 @@
 ##! experimental.access_modifiers
 ##! experimental.givens
 
-import "../ecommerce.malloy"
+import "../index.malloy"
 
 // Filtered base: every tile below runs against this extended source, so the
 // given mapping (where: … ~ $GIVEN) is applied once and inherited by all tiles.

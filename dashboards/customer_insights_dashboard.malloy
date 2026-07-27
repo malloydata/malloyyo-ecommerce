@@ -1,7 +1,7 @@
 ##! experimental.access_modifiers
 ##! experimental.givens
 
-import "../ecommerce.malloy"
+import "../index.malloy"
 
 # artifact { title="Customer Insights"}
 #" Who's buying — spend tiers, loyalty, acquisition source, best customers, and returns. Filter by brand, category, product, or department.

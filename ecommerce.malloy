@@ -1,9 +1,10 @@
 ##! experimental.access_modifiers
 ##! experimental.givens
 
-// storage sources — swap between "gs.malloy" (GCS parquet) and "md.malloy"
-// (MotherDuck, faster). Both define the same source names.
-import "md.malloy"
+// storage sources — swap between "gs.malloy" (GCS parquet, no credentials) and
+// "md.malloy" (MotherDuck, faster, needs MALLOYYO_TOKEN). Both define the same
+// source names, so this import is the only line that changes.
+import "gs.malloy"
 
 
 // --------------------------------------------------------------------------

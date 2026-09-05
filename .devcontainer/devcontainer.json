@@ -1,0 +1,32 @@
+{
+  "name": "malloyyo-ecommerce",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  // malloyyo drives the model (lint / dashboard dev / publish); claude-code is
+  // the authoring agent. .mcp.json expects `malloyyo` on PATH, so it has to be
+  // installed before the MCP server starts.
+  "postCreateCommand": "npm install -g @malloydata/malloyyo @anthropic-ai/claude-code",
+  "waitFor": "postCreateCommand",
+
+  // 4173 serves the dashboard shell; `dashboard dev` renders custom (iframe)
+  // dashboards from a separate artifact origin on 4174, so both must be
+  // forwarded or product_explorer and seasonality come up blank.
+  "forwardPorts": [4173, 4174],
+  "portsAttributes": {
+    "4173": { "label": "malloyyo dashboard dev", "onAutoForward": "openPreview" },
+    "4174": { "label": "malloyyo artifact origin", "onAutoForward": "silent" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "malloydata.malloy-vscode",
+        "anthropic.claude-code"
+      ]
+    }
+  }
+}

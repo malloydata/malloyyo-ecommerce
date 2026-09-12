@@ -12,13 +12,13 @@
   "postCreateCommand": "npm install -g @malloydata/malloyyo @anthropic-ai/claude-code",
   "waitFor": "postCreateCommand",
 
-  // 4173 serves the dashboard shell; `dashboard dev` renders custom (iframe)
-  // dashboards from a separate artifact origin on 4174, so both must be
-  // forwarded or product_explorer and seasonality come up blank.
-  "forwardPorts": [4173, 4174],
+  // One port. `dashboard dev` serves custom (iframe) dashboards from this same
+  // origin — the frame is isolated by its opaque sandbox origin, not by a
+  // second port. `openPreview` matters: it opens the FORWARDED url, which is
+  // the only address that reaches the server from your browser.
+  "forwardPorts": [4173],
   "portsAttributes": {
-    "4173": { "label": "malloyyo dashboard dev", "onAutoForward": "openPreview" },
-    "4174": { "label": "malloyyo artifact origin", "onAutoForward": "silent" }
+    "4173": { "label": "malloyyo dashboard dev", "onAutoForward": "openPreview" }
   },
 
   "customizations": {

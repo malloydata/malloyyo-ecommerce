@@ -27,12 +27,17 @@ Open the repo in a Codespace. `.devcontainer/devcontainer.json` installs the
 
 Codespaces forwards 4173 to an HTTPS URL, so the dashboards are viewable and
 fully interactive in your own browser — givens, filters and drill-downs all
-work. Port 4174 is forwarded too: `dashboard dev` renders custom (iframe)
-dashboards from that separate artifact origin, and without it
-`product_explorer_dashboard` and `seasonality` render blank.
+work. Everything is served from that one port, custom (iframe) dashboards
+included: the frame is isolated by its opaque sandbox origin rather than by a
+second port. (Needs malloyyo 0.2.41+; earlier versions used a second origin on
+4174 and could not be reached through a proxy or a forwarded port.)
 
-Forwarded ports are private to you by default. If the iframe dashboards fail to
-load, set port 4174's visibility to match 4173 in the **Ports** panel.
+**Open dashboards through the forwarded URL, not `http://localhost:4173`.** In
+the **Ports** panel, right-click 4173 → **Preview in Editor**, or use the
+preview that opens on its own — either way VS Code substitutes the forwarded URL
+for you. VS Code's Simple Browser does no such rewriting: hand it a `localhost`
+address and it resolves that on *your* machine, where nothing is listening, and
+the panel just comes up blank.
 
 **No credentials are required.** The model reads public Parquet over HTTPS, so a
 fresh container can compile and serve every dashboard with nothing configured.

@@ -3,7 +3,7 @@
 
 // storage sources — swap between "gs.malloy" (GCS parquet) and "md.malloy"
 // (MotherDuck, faster). Both define the same source names.
-import "md.malloy"
+import "gs.malloy"
 
 
 // --------------------------------------------------------------------------

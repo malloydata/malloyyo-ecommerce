@@ -1,0 +1,63 @@
+##! experimental.access_modifiers
+##! experimental.givens
+
+import "../index.malloy"
+
+// --------------------------------------------------------------------------
+// Brand Trends — data behind the custom dashboard (`brand_trends_dashboard.jsx`,
+// the flat sibling the dev server picks up). Every tile returns FLAT rows (or
+// a small nested array for the leaderboard's sparkline); all shaping, ranking,
+// and rate arithmetic happens here so the JSX only encodes column names into
+// Vega-Lite specs or table cells.
+// --------------------------------------------------------------------------
+
+source: brand_data is order_items extend {
+  where:
+    inventory_items.product_brand ~ $BRAND,
+    inventory_items.product_category ~ $CATEGORY,
+    inventory_items.product_name ~ $PRODUCT,
+    inventory_items.product_department ~ $DEPARTMENT,
+    created_at ~ $PERIOD
+}
+
+// The `# artifact` query: headline numbers for the hero + KPI strip, and the
+// query whose given references define the dashboard's control bar.
+# artifact { title="Brand Trends" }
+#" How each brand is selling — a monthly trend, a sales ranking, and a leaderboard with margin, orders, and momentum. Filter by brand, category, product, or department.
+query: brand_trends_dashboard is brand_data -> {
+  aggregate:
+    sales is total_sales
+    margin is total_gross_margin
+    margin_rate is total_gross_margin / nullif(total_sales, 0)
+    orders is order_count
+    avg_order_value is total_sales / nullif(order_count, 0)
+    brands is count(inventory_items.product_brand)
+}
+
+// Overall monthly trend — ONE series, ONE hue. When a single brand is picked
+// via $BRAND this is that brand's own trend; otherwise it's the filtered mix.
+query: brand_trend is brand_data -> {
+  group_by: order_month is created_at.month
+  aggregate: sales is total_sales
+  order_by: order_month
+}
+
+// Ranking + leaderboard: top brands by sales, with margin/order context and a
+// nested monthly trend per brand — the sparkline and the momentum signal both
+// come from `trend`.
+query: brand_ranking is brand_data -> {
+  top: 10
+  group_by: brand is inventory_items.product_brand
+  aggregate:
+    sales is total_sales
+    margin is total_gross_margin
+    margin_rate is total_gross_margin / nullif(total_sales, 0)
+    orders is order_count
+    products is product_count
+  order_by: sales desc
+  nest: trend is {
+    group_by: order_month is created_at.month
+    aggregate: month_sales is total_sales
+    order_by: order_month
+  }
+}
